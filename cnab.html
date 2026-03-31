@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNAB 400 — GSJ Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0e1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3347;--accent:#3b82f6;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--text:#e2e8f0;--muted:#64748b;--white:#ffffff;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:2rem;height:60px;position:sticky;top:0;z-index:100;}
+  .nav-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--white);text-decoration:none;letter-spacing:-0.5px;}
+  .nav-brand span{color:var(--accent);}
+  .nav-links{display:flex;gap:0.25rem;}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:0.85rem;font-weight:500;padding:0.4rem 0.75rem;border-radius:6px;transition:all 0.2s;}
+  .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2);}
+  .nav-links a.active{color:var(--accent);}
+  .container{max-width:1200px;margin:0 auto;padding:2rem;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;}
+  .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.75rem;color:var(--white);}
+  .page-title span{color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;}
+  .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:var(--white);margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem;}
+  .input,.select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.6rem 1rem;font-family:'DM Sans',sans-serif;font-size:0.875rem;outline:none;transition:border-color 0.2s;width:100%;}
+  .input:focus,.select:focus{border-color:var(--accent);}
+  option{background:var(--surface2);}
+  .btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.6rem 1.25rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:500;border:none;cursor:pointer;transition:all 0.2s;}
+  .btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:#2563eb;}
+  .btn-success{background:var(--success);color:#fff;}.btn-success:hover{background:#16a34a;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}.btn-ghost:hover{color:var(--text);border-color:var(--text);}
+  .btn-sm{padding:0.35rem 0.75rem;font-size:0.8rem;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
+  .form-group{display:flex;flex-direction:column;gap:0.4rem;}
+  .form-group label{font-size:0.8rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:0.875rem;}
+  thead th{text-align:left;padding:0.65rem 1rem;color:var(--muted);font-weight:500;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);}
+  tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
+  tbody tr:hover{background:var(--surface2);}
+  tbody td{padding:0.75rem 1rem;vertical-align:middle;}
+  tbody tr:last-child{border-bottom:none;}
+  .badge{display:inline-flex;align-items:center;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:500;}
+  .badge-green{background:#14532d;color:#4ade80;}
+  .badge-yellow{background:#422006;color:#fbbf24;}
+  .badge-red{background:#450a0a;color:#f87171;}
+  .badge-gray{background:#1e293b;color:#94a3b8;}
+  /* Preview CNAB */
+  .cnab-preview{background:#0a0c12;border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'DM Mono',monospace;font-size:0.75rem;color:#a3e635;overflow-x:auto;max-height:320px;overflow-y:auto;white-space:pre;line-height:1.6;}
+  .cnab-line{display:flex;}
+  .cnab-pos{color:var(--muted);margin-right:0.75rem;user-select:none;min-width:3ch;}
+  /* Steps */
+  .steps{display:flex;gap:0;margin-bottom:2rem;}
+  .step{flex:1;display:flex;align-items:center;gap:0.75rem;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);position:relative;}
+  .step:first-child{border-radius:10px 0 0 10px;}
+  .step:last-child{border-radius:0 10px 10px 0;}
+  .step+.step{border-left:none;}
+  .step.active{background:var(--surface2);border-color:var(--accent);}
+  .step.done{border-color:var(--success);}
+  .step-num{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;}
+  .step.active .step-num{border-color:var(--accent);color:var(--accent);}
+  .step.done .step-num{border-color:var(--success);background:var(--success);color:#fff;}
+  .step-label{font-size:0.875rem;font-weight:500;color:var(--muted);}
+  .step.active .step-label,.step.done .step-label{color:var(--white);}
+  /* Checkbox table */
+  .cb-row td { padding: 0.6rem 1rem; }
+  input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);}
+  #toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:0.5rem;}
+  .toast-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem;font-size:0.875rem;min-width:260px;animation:slideIn 0.3s ease;}
+  .toast-item.success{border-left:3px solid var(--success);}
+  .toast-item.error{border-left:3px solid var(--danger);}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+  .info-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:0.8rem;color:var(--muted);line-height:1.6;}
+  .info-box strong{color:var(--text);}
+  .section-hidden{display:none;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">GSJ<span>.</span>Admin</a>
+  <div class="nav-links">
+    <a href="clientes.html">Clientes</a>
+    <a href="planos.html">Planos</a>
+    <a href="beneficiarios.html">Beneficiários</a>
+    <a href="cobrancas.html">Cobranças</a>
+    <a href="cnab.html" class="active">CNAB 400</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Geração <span>CNAB</span> 400</div>
+      <div style="color:var(--muted);font-size:0.875rem;margin-top:0.25rem">Geração de remessas bancárias no padrão CNAB 400</div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-label">Configurar Remessa</div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">Selecionar Cobranças</div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">Prévia & Download</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Config -->
+  <div id="sec-step1">
+    <div class="card">
+      <div class="card-title">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Dados da Empresa (Cedente)
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>CNPJ da Empresa *</label>
+          <input class="input" id="c-cnpj" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)">
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label>Razão Social *</label>
+          <input class="input" id="c-razao" placeholder="RAZÃO SOCIAL DA EMPRESA">
+        </div>
+        <div class="form-group">
+          <label>Banco *</label>
+          <select class="select" id="c-banco">
+            <option value="237">237 — Bradesco</option>
+            <option value="341">341 — Itaú</option>
+            <option value="033">033 — Santander</option>
+            <option value="001">001 — Banco do Brasil</option>
+            <option value="104">104 — Caixa Econômica</option>
+            <option value="756">756 — Sicoob</option>
+            <option value="748">748 — Sicredi</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Agência</label>
+          <input class="input" id="c-agencia" placeholder="0000" maxlength="5">
+        </div>
+        <div class="form-group">
+          <label>Conta Corrente</label>
+          <input class="input" id="c-conta" placeholder="000000-0">
+        </div>
+        <div class="form-group">
+          <label>Código do Cedente / Convênio</label>
+          <input class="input" id="c-cedente" placeholder="000000">
+        </div>
+        <div class="form-group">
+          <label>Carteira</label>
+          <input class="input" id="c-carteira" placeholder="09" maxlength="3">
+        </div>
+        <div class="form-group">
+          <label>Número Sequencial da Remessa</label>
+          <input class="input" id="c-seq-remessa" type="number" value="1" min="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Filtro de Cobranças
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Mês/Ano de Referência</label>
+          <input class="input" type="month" id="f-ref">
+        </div>
+        <div class="form-group">
+          <label>Status das Cobranças</label>
+          <select class="select" id="f-status-cnab">
+            <option value="aberto">Em Aberto</option>
+            <option value="vencido">Vencidas</option>
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:end">
+          <button class="btn btn-primary" onclick="carregarCobrancas()">
+            Carregar Cobranças →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Select -->
+  <div id="sec-step2" class="section-hidden">
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>Selecionar Cobranças para Remessa</span>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-ghost btn-sm" onclick="selectAll(true)">Selecionar Todos</button>
+          <button class="btn btn-ghost btn-sm" onclick="selectAll(false)">Desmarcar Todos</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="chk-all" onchange="selectAll(this.checked)"></th>
+              <th>Cliente</th>
+              <th>Plano</th>
+              <th>Referência</th>
+              <th>Vencimento</th>
+              <th>Valor</th>
+              <th>Nosso Número</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cnab"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+        <div id="sel-summary" style="font-size:0.875rem;color:var(--muted)">0 cobranças selecionadas — R$ 0,00</div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-ghost" onclick="voltarStep1()">← Voltar</button>
+          <button class="btn btn-primary" onclick="gerarPrevia()">Gerar Prévia →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Preview & Download -->
+  <div id="sec-step3" class="section-hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+      <div class="card">
+        <div class="card-title">Resumo da Remessa</div>
+        <div id="remessa-resumo" style="display:flex;flex-direction:column;gap:0.75rem;font-size:0.875rem"></div>
+        <div style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+          <button class="btn btn-success" onclick="baixarArquivo()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar Arquivo .REM
+          </button>
+          <button class="btn btn-ghost" onclick="salvarRemessa()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar no Sistema
+          </button>
+          <button class="btn btn-ghost" onclick="voltarStep2()">← Voltar</button>
+        </div>
+      </div>
+
+      <div class="card" style="grid-row:span 2">
+        <div class="card-title">Prévia do Arquivo CNAB 400</div>
+        <div class="cnab-preview" id="cnab-preview"></div>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--muted)">Cada linha tem exatamente 400 caracteres conforme padrão CNAB.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Remessas Anteriores</div>
+        <div id="remessas-hist" style="font-size:0.875rem;color:var(--muted)">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://orpydwrbzedavfoegyhx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ycHlkd3JiemVkYXZmb2VneWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAxNTU2MDAwMH0.placeholder';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let cobrancasLoaded = [];
+let cnabContent = '';
+let currentStep = 1;
+
+function setStep(n) {
+  currentStep = n;
+  [1,2,3].forEach(i => {
+    const step = document.getElementById('step'+i);
+    const sec = document.getElementById('sec-step'+i);
+    step.className = 'step' + (i<n?' done':i===n?' active':'');
+    if (sec) sec.classList.toggle('section-hidden', i!==n);
+  });
+}
+
+function voltarStep1() { setStep(1); }
+function voltarStep2() { setStep(2); }
+
+async function carregarCobrancas() {
+  const ref = document.getElementById('f-ref').value;
+  const status = document.getElementById('f-status-cnab').value;
+
+  try {
+    let q = sb.from('cobrancas')
+      .select('*, cliente_planos(id, clientes(id,razao_social,cpf_cnpj), planos(nome))')
+      .order('vencimento');
+    if (ref) q = q.eq('referencia', ref);
+    if (status) q = q.eq('status', status);
+    const { data, error } = await q;
+    if (error) throw error;
+    cobrancasLoaded = data || [];
+    renderCobrancasTable(cobrancasLoaded);
+    setStep(2);
+  } catch(e) { showToast('Erro: '+e.message,'error'); }
+}
+
+function renderCobrancasTable(data) {
+  const tbody = document.getElementById('tbody-cnab');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Nenhuma cobrança encontrada para os filtros selecionados.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((c,i) => {
+    const cn = c.cliente_planos?.clientes?.razao_social||'—';
+    const pn = c.cliente_planos?.planos?.nome||'—';
+    const hoje = new Date().toISOString().split('T')[0];
+    const isVenc = c.status==='aberto' && c.vencimento<hoje;
+    return `<tr class="cb-row">
+      <td><input type="checkbox" class="chk-item" data-i="${i}" onchange="updateSummary()" checked></td>
+      <td>${cn}</td>
+      <td style="font-size:0.8rem">${pn}</td>
+      <td>${fmtRef(c.referencia)}</td>
+      <td style="${isVenc?'color:var(--danger)':''}">${fmtDate(c.vencimento)}</td>
+      <td style="font-weight:600">R$ ${parseFloat(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.8rem">${c.nosso_numero||'—'}</td>
+      <td><span class="badge ${isVenc?'badge-red':'badge-yellow'}">${isVenc?'Vencida':'Em Aberto'}</span></td>
+    </tr>`;
+  }).join('');
+  updateSummary();
+}
+
+function selectAll(checked) {
+  document.querySelectorAll('.chk-item').forEach(cb => cb.checked = checked);
+  document.getElementById('chk-all').checked = checked;
+  updateSummary();
+}
+
+function updateSummary() {
+  const selected = getSelected();
+  const total = selected.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+  document.getElementById('sel-summary').textContent =
+    `${selected.length} cobrança(s) selecionada(s) — R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+}
+
+function getSelected() {
+  const indices = [...document.querySelectorAll('.chk-item:checked')].map(cb=>parseInt(cb.dataset.i));
+  return indices.map(i=>cobrancasLoaded[i]);
+}
+
+function gerarPrevia() {
+  const selected = getSelected();
+  if (!selected.length) { showToast('Selecione ao menos uma cobrança.','error'); return; }
+
+  const cnpj = document.getElementById('c-cnpj').value.replace(/\D/g,'');
+  const razao = document.getElementById('c-razao').value.trim();
+  const banco = document.getElementById('c-banco').value;
+  const agencia = document.getElementById('c-agencia').value.trim();
+  const conta = document.getElementById('c-conta').value.replace(/\D/g,'');
+  const cedente = document.getElementById('c-cedente').value.trim();
+  const carteira = document.getElementById('c-carteira').value.trim() || '09';
+  const seqRemessa = parseInt(document.getElementById('c-seq-remessa').value)||1;
+
+  if (!cnpj || !razao) { showToast('Preencha CNPJ e Razão Social.','error'); return; }
+
+  cnabContent = gerarCNAB400(selected, {cnpj, razao, banco, agencia, conta, cedente, carteira, seqRemessa});
+  
+  // Display preview (first 8 lines + last)
+  const lines = cnabContent.split('\n').filter(Boolean);
+  const preview = document.getElementById('cnab-preview');
+  preview.innerHTML = lines.slice(0, Math.min(lines.length, 12)).map((l,i) => 
+    `<div><span style="color:var(--muted);user-select:none;min-width:2ch;display:inline-block">${i+1}</span>  ${l}</div>`
+  ).join('') + (lines.length>12?`\n<div style="color:var(--muted)">... +${lines.length-12} linhas ...</div>\n<div><span style="color:var(--muted)">${lines.length}</span>  ${lines[lines.length-1]}</div>`:'');
+
+  // Summary
+  const totalVal = selected.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+  document.getElementById('remessa-resumo').innerHTML = `
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Banco</span><strong>${banco} — ${document.getElementById('c-banco').options[document.getElementById('c-banco').selectedIndex].text.split('—')[1].trim()}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Empresa</span><strong>${razao}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">CNPJ</span><strong>${document.getElementById('c-cnpj').value}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total de Títulos</span><strong>${selected.length}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Valor Total</span><strong style="color:var(--success)">R$ ${totalVal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Linhas no Arquivo</span><strong>${lines.length}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Nº da Remessa</span><strong>${seqRemessa}</strong></div>
+  `;
+
+  loadRemessasHist();
+  setStep(3);
+}
+
+// ─── CNAB 400 Generator ────────────────────────────────────────────────────
+function pad(val, len, padChar='0', right=false) {
+  const s = String(val||'');
+  if (right) return (s + padChar.repeat(len)).slice(0, len);
+  return (padChar.repeat(len) + s).slice(-len);
+}
+function padR(val, len) { return pad(val, len, ' ', true); }
+function padL(val, len, c='0') { return pad(val, len, c); }
+function fmtDateCNAB(d) {
+  if (!d) return '000000';
+  const dt = new Date(d+'T00:00:00');
+  return padL(dt.getDate(),2)+padL(dt.getMonth()+1,2)+String(dt.getFullYear()).slice(-2);
+}
+function fmtValor(v, len) { return padL(Math.round((parseFloat(v)||0)*100), len); }
+
+function gerarCNAB400(cobras, cfg) {
+  const { cnpj, razao, banco, agencia, conta, cedente, carteira, seqRemessa } = cfg;
+  const hoje = new Date();
+  const dtHoje = fmtDateCNAB(hoje.toISOString().split('T')[0]);
+  const linhas = [];
+  let seqLinha = 1;
+
+  // HEADER
+  const header = [
+    '0',                            // 001: identificação do registro
+    '1',                            // 002: tipo operação (remessa=1)
+    padR('REMESSA', 7),             // 003-009: literal
+    '01',                           // 010-011: código serviço cobrança
+    padR('COBRANCA', 15),           // 012-026: literal serviço
+    padL(cedente, 20),              // 027-046: código cedente
+    padR(razao.toUpperCase().slice(0,30), 30), // 047-076: razão social
+    padL(banco, 3),                 // 077-079: banco
+    padL(agencia, 5),               // 080-084: agência
+    padR('', 10),                   // 085-094: brancos
+    dtHoje,                         // 095-100: data gravação
+    padR('', 294),                  // 101-394: brancos
+    padL(seqRemessa, 6),            // 395-400 sequencial
+  ];
+  const headerLine = header.join('').slice(0, 400);
+  linhas.push(headerLine.padEnd(400,' ').slice(0,400));
+  seqLinha++;
+
+  // DETAIL RECORDS
+  cobras.forEach(c => {
+    const cpfCnpjSacado = (c.cliente_planos?.clientes?.cpf_cnpj||'').replace(/\D/g,'');
+    const nomeSacado = (c.cliente_planos?.clientes?.razao_social||'').toUpperCase().slice(0,40);
+    const nossoNum = (c.nosso_numero||'0').replace(/\D/g,'').slice(0,11);
+    const vencimento = fmtDateCNAB(c.vencimento);
+    const valor = fmtValor(c.valor, 13);
+    const tipoCpfCnpj = cpfCnpjSacado.length === 11 ? '01' : '02';
+
+    const det = [
+      '1',                            // 001: tipo registro
+      '0' + tipoCpfCnpj,              // 002-003
+      padL(cpfCnpjSacado, 14),        // 004-017: CPF/CNPJ sacado
+      padL(cedente, 17),              // 018-034: conta cedente
+      padR('', 25),                   // 035-059: referência cedente
+      padL(nossoNum, 11),             // 060-070: nosso número
+      padR('', 20),                   // 071-090: brancos
+      vencimento,                     // 091-096: vencimento
+      valor,                          // 097-109: valor (13 pos)
+      padL(banco, 3),                 // 110-112: banco cobrador
+      padL(agencia, 5),               // 113-117: agência cobrador
+      carteira,                       // 118-120: carteira (3)
+      padR('01', 2),                  // 121-122: tipo de cobrança (01=simples)
+      padR('', 10),                   // 123-132: brancos
+      dtHoje,                         // 133-138: data emissão
+      padR('', 21),                   // 139-159: instruções/brancos
+      fmtValor(0, 13),                // 160-172: juros/dia (0)
+      '000000',                       // 173-178: data limite desconto
+      fmtValor(0, 13),                // 179-191: valor desconto
+      fmtValor(0, 13),                // 192-204: valor iof
+      fmtValor(0, 13),                // 205-217: abatimento
+      tipoCpfCnpj,                    // 218-219: tipo sacado
+      padL(cpfCnpjSacado, 14),        // 220-233: CPF/CNPJ sacado
+      padR(nomeSacado, 40),           // 234-273: nome sacado
+      padR('', 40),                   // 274-313: endereço sacado
+      padR('', 12),                   // 314-325: CEP + bairro
+      padR('', 15),                   // 326-340: cidade sacado
+      padR('', 2),                    // 341-342: estado sacado
+      padR('', 40),                   // 343-382: sacador/avalista
+      padR('', 8),                    // 383-390: brancos
+      padL(seqLinha, 6),              // 395-400: sequencial
+    ];
+    const detLine = det.join('').padEnd(400,' ').slice(0,400);
+    linhas.push(detLine);
+    seqLinha++;
+  });
+
+  // TRAILER
+  const trailer = [
+    '9',                            // 001: tipo registro trailer
+    padR('', 393),                  // 002-394: brancos
+    padL(seqLinha, 6),              // 395-400: sequencial
+  ];
+  linhas.push(trailer.join('').padEnd(400,' ').slice(0,400));
+
+  return linhas.join('\r\n') + '\r\n';
+}
+
+function baixarArquivo() {
+  if (!cnabContent) { showToast('Gere a prévia primeiro.','error'); return; }
+  const seqR = padL(document.getElementById('c-seq-remessa').value, 4, '0');
+  const dt = new Date().toISOString().split('T')[0].replace(/-/g,'');
+  const filename = `REMESSA_${seqR}_${dt}.REM`;
+  const blob = new Blob([cnabContent], {type:'text/plain;charset=latin1'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast('Arquivo '+filename+' baixado!','success');
+}
+
+async function salvarRemessa() {
+  const selected = getSelected();
+  const totalVal = selected.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+  try {
+    const { error } = await sb.from('remessas').insert({
+      banco: document.getElementById('c-banco').value,
+      empresa_cnpj: document.getElementById('c-cnpj').value.replace(/\D/g,'') || null,
+      empresa_nome: document.getElementById('c-razao').value.trim(),
+      seq_remessa: parseInt(document.getElementById('c-seq-remessa').value)||1,
+      total_titulos: selected.length,
+      valor_total: totalVal,
+      data_geracao: new Date().toISOString().split('T')[0],
+      conteudo: cnabContent,
+    });
+    if (error) throw error;
+    showToast('Remessa salva no sistema!','success');
+    loadRemessasHist();
+  } catch(e) { showToast('Erro ao salvar: '+e.message,'error'); }
+}
+
+async function loadRemessasHist() {
+  const container = document.getElementById('remessas-hist');
+  try {
+    const { data } = await sb.from('remessas').select('*').order('created_at',{ascending:false}).limit(5);
+    if (!data?.length) { container.textContent = 'Nenhuma remessa salva.'; return; }
+    container.innerHTML = `<table style="width:100%;font-size:0.8rem;border-collapse:collapse">${
+      data.map(r=>`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:0.5rem 0">${fmtDate(r.data_geracao)}</td>
+        <td>${r.banco}</td>
+        <td>${r.total_titulos} títulos</td>
+        <td style="color:var(--success)">R$ ${parseFloat(r.valor_total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        <td>${r.conteudo?`<button class="btn btn-ghost btn-sm" onclick='baixarRemessa(${JSON.stringify(r)})'>↓</button>`:''}</td>
+      </tr>`).join('')
+    }</table>`;
+  } catch(e) { container.textContent = 'Erro ao carregar histórico.'; }
+}
+
+function baixarRemessa(r) {
+  if (!r.conteudo) return;
+  const blob = new Blob([r.conteudo],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `REMESSA_${r.seq_remessa}_${(r.data_geracao||'').replace(/-/g,'')}.REM`;
+  a.click();
+}
+
+function fmtDate(d) { return d?new Date(d+'T00:00:00').toLocaleDateString('pt-BR'):'—'; }
+function fmtRef(r) {
+  if(!r) return '—';
+  const [y,m]=r.split('-');
+  const ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${ms[parseInt(m)-1]}/${y}`;
+}
+function maskCNPJ(el) {
+  let v=el.value.replace(/\D/g,'').slice(0,14);
+  v=v.replace(/(\d{2})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1/$2').replace(/(\d{4})(\d{1,2})$/,'$1-$2');
+  el.value=v;
+}
+
+function showToast(msg,type='success') {
+  const div=document.createElement('div');
+  div.className=`toast-item ${type}`;
+  div.innerHTML=(type==='success'?'✓ ':'✕ ')+msg;
+  document.getElementById('toast').appendChild(div);
+  setTimeout(()=>div.remove(),4000);
+}
+
+// Pre-fill with saved data if available
+document.getElementById('f-ref').value = new Date().toISOString().slice(0,7);
+</script>
+</body>
+</html>

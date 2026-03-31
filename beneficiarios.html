@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beneficiários — GSJ Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0e1117;
+    --surface: #161b27;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --white: #ffffff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
+
+  /* NAV */
+  nav { background:var(--surface); border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; gap:2rem; height:60px; position:sticky; top:0; z-index:100; }
+  .nav-brand { font-family:'Syne',sans-serif; font-weight:800; font-size:1.2rem; color:var(--white); text-decoration:none; letter-spacing:-0.5px; }
+  .nav-brand span { color:var(--accent); }
+  .nav-links { display:flex; gap:0.25rem; }
+  .nav-links a { color:var(--muted); text-decoration:none; font-size:0.85rem; font-weight:500; padding:0.4rem 0.75rem; border-radius:6px; transition:all 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color:var(--text); background:var(--surface2); }
+  .nav-links a.active { color:var(--accent); }
+
+  /* LAYOUT */
+  .container { max-width:1200px; margin:0 auto; padding:2rem; }
+  .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; }
+  .page-title { font-family:'Syne',sans-serif; font-weight:800; font-size:1.75rem; color:var(--white); }
+  .page-title span { color:var(--accent); }
+
+  /* CARDS */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; }
+
+  /* FILTERS */
+  .filters { display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .input, .select { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:0.6rem 1rem; font-family:'DM Sans',sans-serif; font-size:0.875rem; outline:none; transition:border-color 0.2s; }
+  .input:focus, .select:focus { border-color:var(--accent); }
+  .input { flex:1; min-width:200px; }
+  .select { min-width:180px; }
+  option { background:var(--surface2); }
+
+  /* BTN */
+  .btn { display:inline-flex; align-items:center; gap:0.5rem; padding:0.6rem 1.25rem; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.875rem; font-weight:500; border:none; cursor:pointer; transition:all 0.2s; text-decoration:none; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#2563eb; }
+  .btn-success { background:var(--success); color:#fff; }
+  .btn-success:hover { background:#16a34a; }
+  .btn-danger { background:transparent; color:var(--danger); border:1px solid var(--danger); }
+  .btn-danger:hover { background:var(--danger); color:#fff; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--text); border-color:var(--text); }
+  .btn-sm { padding:0.35rem 0.75rem; font-size:0.8rem; }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:0.875rem; }
+  thead th { text-align:left; padding:0.75rem 1rem; color:var(--muted); font-weight:500; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--border); }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+  tbody tr:hover { background:var(--surface2); }
+  tbody td { padding:0.85rem 1rem; vertical-align:middle; }
+  tbody tr:last-child { border-bottom:none; }
+
+  /* BADGE */
+  .badge { display:inline-flex; align-items:center; gap:0.3rem; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:500; }
+  .badge-blue { background:#1e3a5f; color:#60a5fa; }
+  .badge-green { background:#14532d; color:#4ade80; }
+  .badge-yellow { background:#422006; color:#fbbf24; }
+  .badge-red { background:#450a0a; color:#f87171; }
+  .badge-gray { background:#1e293b; color:#94a3b8; }
+
+  /* MODAL */
+  .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; padding:1rem; }
+  .modal-bg.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:100%; max-width:640px; max-height:90vh; overflow-y:auto; }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; padding:1.5rem; border-bottom:1px solid var(--border); }
+  .modal-title { font-family:'Syne',sans-serif; font-weight:700; font-size:1.1rem; color:var(--white); }
+  .modal-body { padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; }
+  .modal-footer { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:0.75rem; justify-content:flex-end; }
+  .close-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.25rem; line-height:1; }
+  .close-btn:hover { color:var(--text); }
+
+  /* FORM */
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .form-group { display:flex; flex-direction:column; gap:0.4rem; }
+  .form-group label { font-size:0.8rem; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+  .form-group .input, .form-group .select { width:100%; }
+
+  /* STATS */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:2rem; }
+  .stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.1rem 1.25rem; }
+  .stat-label { font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; }
+  .stat-value { font-family:'Syne',sans-serif; font-weight:700; font-size:1.5rem; color:var(--white); }
+
+  /* AVATAR */
+  .avatar { width:32px; height:32px; border-radius:50%; background:var(--accent2); display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#fff; flex-shrink:0; }
+
+  /* TOAST */
+  #toast { position:fixed; bottom:1.5rem; right:1.5rem; z-index:999; display:flex; flex-direction:column; gap:0.5rem; }
+  .toast-item { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; font-size:0.875rem; min-width:260px; display:flex; align-items:center; gap:0.5rem; animation:slideIn 0.3s ease; }
+  .toast-item.success { border-left:3px solid var(--success); }
+  .toast-item.error { border-left:3px solid var(--danger); }
+  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  .empty-state { text-align:center; padding:3rem; color:var(--muted); }
+  .empty-state svg { margin-bottom:1rem; opacity:0.3; }
+  .loading { text-align:center; padding:2rem; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">GSJ<span>.</span>Admin</a>
+  <div class="nav-links">
+    <a href="clientes.html">Clientes</a>
+    <a href="planos.html">Planos</a>
+    <a href="beneficiarios.html" class="active">Beneficiários</a>
+    <a href="cobrancas.html">Cobranças</a>
+    <a href="cnab.html">CNAB 400</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Beneficiários <span>&</span> Dependentes</div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Novo Beneficiário
+    </button>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="s-total">—</div></div>
+    <div class="stat"><div class="stat-label">Titulares</div><div class="stat-value" id="s-titulares">—</div></div>
+    <div class="stat"><div class="stat-label">Dependentes</div><div class="stat-value" id="s-dependentes">—</div></div>
+    <div class="stat"><div class="stat-label">Ativos</div><div class="stat-value" id="s-ativos">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="filters">
+      <input type="text" class="input" id="search" placeholder="Buscar por nome ou CPF..." oninput="filterTable()">
+      <select class="select" id="f-tipo" onchange="filterTable()">
+        <option value="">Todos os tipos</option>
+        <option value="titular">Titular</option>
+        <option value="dependente">Dependente</option>
+      </select>
+      <select class="select" id="f-status" onchange="filterTable()">
+        <option value="">Todos os status</option>
+        <option value="ativo">Ativo</option>
+        <option value="inativo">Inativo</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+      <select class="select" id="f-cliente" onchange="filterTable()">
+        <option value="">Todos os clientes</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>Beneficiário</th>
+            <th>CPF</th>
+            <th>Tipo</th>
+            <th>Cliente / Plano</th>
+            <th>Data Nasc.</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7" class="loading">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo / Editar -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Novo Beneficiário</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Cliente *</label>
+          <select class="select" id="f-cliente-id" required></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Plano (Cliente-Plano) *</label>
+          <select class="select" id="f-cliente-plano-id" required></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Nome Completo *</label>
+          <input class="input" id="f-nome" placeholder="Nome do beneficiário" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>CPF *</label>
+          <input class="input" id="f-cpf" placeholder="000.000.000-00" oninput="maskCPF(this)">
+        </div>
+        <div class="form-group">
+          <label>Data de Nascimento *</label>
+          <input class="input" type="date" id="f-nascimento">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo *</label>
+          <select class="select" id="f-tipo-ben" onchange="toggleTitularRef()">
+            <option value="titular">Titular</option>
+            <option value="dependente">Dependente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sexo</label>
+          <select class="select" id="f-sexo">
+            <option value="">Selecionar</option>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+          </select>
+        </div>
+      </div>
+      <div id="dependente-fields" style="display:none;">
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Titular de Referência</label>
+            <select class="select" id="f-titular-ref"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Parentesco</label>
+            <select class="select" id="f-parentesco">
+              <option value="">Selecionar</option>
+              <option value="conjuge">Cônjuge</option>
+              <option value="filho">Filho(a)</option>
+              <option value="pai_mae">Pai/Mãe</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Carteirinha</label>
+          <input class="input" id="f-carteirinha" placeholder="Número da carteirinha">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="select" id="f-status-ben">
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data de Inclusão</label>
+          <input class="input" type="date" id="f-inclusao">
+        </div>
+        <div class="form-group">
+          <label>Data de Exclusão</label>
+          <input class="input" type="date" id="f-exclusao">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBeneficiario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="modal-bg" id="modal-del">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Confirmar Exclusão</div>
+      <button class="close-btn" onclick="document.getElementById('modal-del').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted)">Esta ação é irreversível. Digite a senha de exclusão:</p>
+      <input class="input" type="password" id="del-senha" placeholder="Senha de exclusão" style="width:100%">
+      <input type="hidden" id="del-id">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-del').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://orpydwrbzedavfoegyhx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ycHlkd3JiemVkYXZmb2VneWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAxNTU2MDAwMH0.placeholder';
+const DEL_SENHA = 'deleta2701';
+
+// Init Supabase
+let supabase;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {}
+
+// Fetch wrapper
+async function query(table, opts = {}) {
+  let q = supabase.from(table).select(opts.select || '*');
+  if (opts.eq) Object.entries(opts.eq).forEach(([k,v]) => q = q.eq(k,v));
+  if (opts.order) q = q.order(opts.order, {ascending: opts.asc ?? true});
+  const { data, error } = await q;
+  if (error) throw error;
+  return data;
+}
+
+let allData = [];
+let clientes = [];
+let clientePlanos = [];
+
+async function init() {
+  try {
+    // Load clients for filter
+    clientes = await query('clientes', {select:'id,razao_social', order:'razao_social'});
+    const sel = document.getElementById('f-cliente');
+    clientes.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.razao_social;
+      sel.appendChild(o);
+    });
+
+    // Load all beneficiaries with joins
+    const { data, error } = await supabase
+      .from('beneficiarios')
+      .select(`*, cliente_planos(id, clientes(id,razao_social), planos(id,nome))`)
+      .order('nome');
+    if (error) throw error;
+    allData = data || [];
+    renderTable(allData);
+    updateStats(allData);
+  } catch(e) {
+    console.error(e);
+    showToast('Erro ao carregar dados: ' + e.message, 'error');
+    renderTable([]);
+  }
+}
+
+function updateStats(data) {
+  document.getElementById('s-total').textContent = data.length;
+  document.getElementById('s-titulares').textContent = data.filter(d=>d.tipo==='titular').length;
+  document.getElementById('s-dependentes').textContent = data.filter(d=>d.tipo==='dependente').length;
+  document.getElementById('s-ativos').textContent = data.filter(d=>d.status==='ativo').length;
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tbody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg>
+      <div>Nenhum beneficiário encontrado</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(b => {
+    const cp = b.cliente_planos;
+    const clienteNome = cp?.clientes?.razao_social || '—';
+    const planoNome = cp?.planos?.nome || '—';
+    const initials = (b.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:0.75rem">
+        <div class="avatar">${initials}</div>
+        <div>
+          <div style="font-weight:500;color:var(--white)">${b.nome||'—'}</div>
+          ${b.carteirinha ? `<div style="font-size:0.75rem;color:var(--muted)">Cart.: ${b.carteirinha}</div>` : ''}
+        </div>
+      </div></td>
+      <td>${formatCPF(b.cpf)||'—'}</td>
+      <td>${b.tipo==='titular'?'<span class="badge badge-blue">Titular</span>':'<span class="badge badge-yellow">Dependente</span>'}</td>
+      <td><div style="font-size:0.85rem">${clienteNome}</div><div style="font-size:0.75rem;color:var(--muted)">${planoNome}</div></td>
+      <td>${b.data_nascimento ? new Date(b.data_nascimento+'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td><div style="display:flex;gap:0.5rem">
+        <button class="btn btn-ghost btn-sm" onclick='editBeneficiario(${JSON.stringify(b)})'>Editar</button>
+        <button class="btn btn-danger btn-sm" onclick='openDelete("${b.id}")'>Excluir</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function statusBadge(s) {
+  const map = {ativo:'badge-green',inativo:'badge-gray',cancelado:'badge-red'};
+  return `<span class="badge ${map[s]||'badge-gray'}">${s||'—'}</span>`;
+}
+function formatCPF(cpf) {
+  if (!cpf) return '';
+  return cpf.replace(/\D/g,'').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+}
+function maskCPF(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  el.value = v;
+}
+
+function filterTable() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const tipo = document.getElementById('f-tipo').value;
+  const status = document.getElementById('f-status').value;
+  const clienteId = document.getElementById('f-cliente').value;
+  const filtered = allData.filter(b => {
+    const matchSearch = !search || (b.nome||'').toLowerCase().includes(search) || (b.cpf||'').includes(search);
+    const matchTipo = !tipo || b.tipo === tipo;
+    const matchStatus = !status || b.status === status;
+    const matchCliente = !clienteId || b.cliente_planos?.clientes?.id === clienteId;
+    return matchSearch && matchTipo && matchStatus && matchCliente;
+  });
+  renderTable(filtered);
+  updateStats(filtered);
+}
+
+async function openModal(id) {
+  document.getElementById('f-id').value = '';
+  document.getElementById('f-nome').value = '';
+  document.getElementById('f-cpf').value = '';
+  document.getElementById('f-nascimento').value = '';
+  document.getElementById('f-sexo').value = '';
+  document.getElementById('f-tipo-ben').value = 'titular';
+  document.getElementById('f-carteirinha').value = '';
+  document.getElementById('f-status-ben').value = 'ativo';
+  document.getElementById('f-inclusao').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-exclusao').value = '';
+  document.getElementById('modal-title').textContent = 'Novo Beneficiário';
+  toggleTitularRef();
+  await loadClienteSelect();
+  document.getElementById('modal').classList.add('open');
+}
+
+async function loadClienteSelect(selectedClienteId, selectedCpId) {
+  const sel = document.getElementById('f-cliente-id');
+  sel.innerHTML = '<option value="">Selecione o cliente</option>';
+  clientes.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.razao_social;
+    if (c.id === selectedClienteId) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (selectedClienteId) await loadPlanosByCliente(selectedClienteId, selectedCpId);
+}
+
+document.addEventListener('change', async (e) => {
+  if (e.target.id === 'f-cliente-id') {
+    await loadPlanosByCliente(e.target.value);
+    await loadTitularesRef(e.target.value);
+  }
+});
+
+async function loadPlanosByCliente(clienteId, selectedId) {
+  const sel = document.getElementById('f-cliente-plano-id');
+  sel.innerHTML = '<option value="">Selecione o plano</option>';
+  if (!clienteId) return;
+  try {
+    const { data } = await supabase
+      .from('cliente_planos')
+      .select('id, planos(nome)')
+      .eq('cliente_id', clienteId);
+    (data||[]).forEach(cp => {
+      const o = document.createElement('option');
+      o.value = cp.id; o.textContent = cp.planos?.nome || cp.id;
+      if (cp.id === selectedId) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+}
+
+async function loadTitularesRef(clienteId) {
+  const sel = document.getElementById('f-titular-ref');
+  sel.innerHTML = '<option value="">Selecione o titular</option>';
+  if (!clienteId) return;
+  try {
+    const { data } = await supabase
+      .from('beneficiarios')
+      .select('id,nome')
+      .eq('tipo','titular');
+    (data||[]).forEach(b => {
+      const o = document.createElement('option');
+      o.value = b.id; o.textContent = b.nome;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function toggleTitularRef() {
+  const tipo = document.getElementById('f-tipo-ben').value;
+  document.getElementById('dependente-fields').style.display = tipo === 'dependente' ? 'block' : 'none';
+}
+
+async function editBeneficiario(b) {
+  document.getElementById('modal-title').textContent = 'Editar Beneficiário';
+  document.getElementById('f-id').value = b.id;
+  document.getElementById('f-nome').value = b.nome || '';
+  document.getElementById('f-cpf').value = formatCPF(b.cpf) || '';
+  document.getElementById('f-nascimento').value = b.data_nascimento || '';
+  document.getElementById('f-sexo').value = b.sexo || '';
+  document.getElementById('f-tipo-ben').value = b.tipo || 'titular';
+  document.getElementById('f-carteirinha').value = b.carteirinha || '';
+  document.getElementById('f-status-ben').value = b.status || 'ativo';
+  document.getElementById('f-inclusao').value = b.data_inclusao || '';
+  document.getElementById('f-exclusao').value = b.data_exclusao || '';
+  toggleTitularRef();
+  const clienteId = b.cliente_planos?.clientes?.id;
+  await loadClienteSelect(clienteId, b.cliente_plano_id);
+  if (clienteId) await loadTitularesRef(clienteId);
+  if (b.titular_id) document.getElementById('f-titular-ref').value = b.titular_id;
+  if (b.parentesco) document.getElementById('f-parentesco').value = b.parentesco;
+  document.getElementById('modal').classList.add('open');
+}
+
+async function saveBeneficiario() {
+  const id = document.getElementById('f-id').value;
+  const cpId = document.getElementById('f-cliente-plano-id').value;
+  const nome = document.getElementById('f-nome').value.trim();
+  if (!nome || !cpId) { showToast('Preencha os campos obrigatórios.','error'); return; }
+  const payload = {
+    cliente_plano_id: cpId,
+    nome,
+    cpf: document.getElementById('f-cpf').value.replace(/\D/g,'') || null,
+    data_nascimento: document.getElementById('f-nascimento').value || null,
+    sexo: document.getElementById('f-sexo').value || null,
+    tipo: document.getElementById('f-tipo-ben').value,
+    titular_id: document.getElementById('f-titulo-ben')?.value === 'dependente' ? document.getElementById('f-titular-ref').value || null : null,
+    parentesco: document.getElementById('f-tipo-ben').value === 'dependente' ? document.getElementById('f-parentesco').value || null : null,
+    carteirinha: document.getElementById('f-carteirinha').value.trim() || null,
+    status: document.getElementById('f-status-ben').value,
+    data_inclusao: document.getElementById('f-inclusao').value || null,
+    data_exclusao: document.getElementById('f-exclusao').value || null,
+  };
+  try {
+    if (id) {
+      const { error } = await supabase.from('beneficiarios').update(payload).eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('beneficiarios').insert(payload);
+      if (error) throw error;
+    }
+    showToast('Beneficiário salvo com sucesso!', 'success');
+    closeModal();
+    await init();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+function openDelete(id) {
+  document.getElementById('del-id').value = id;
+  document.getElementById('del-senha').value = '';
+  document.getElementById('modal-del').classList.add('open');
+}
+
+async function confirmDelete() {
+  if (document.getElementById('del-senha').value !== DEL_SENHA) {
+    showToast('Senha de exclusão incorreta.','error'); return;
+  }
+  const id = document.getElementById('del-id').value;
+  try {
+    const { error } = await supabase.from('beneficiarios').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Beneficiário excluído.','success');
+    document.getElementById('modal-del').classList.remove('open');
+    await init();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+function showToast(msg, type='success') {
+  const div = document.createElement('div');
+  div.className = `toast-item ${type}`;
+  div.innerHTML = (type==='success'?'✓ ':'✕ ') + msg;
+  document.getElementById('toast').appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+init();
+</script>
+</body>
+</html>

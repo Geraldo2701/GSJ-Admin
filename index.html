@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSJ Admin — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0e1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3347;--accent:#3b82f6;--accent2:#6366f1;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--text:#e2e8f0;--muted:#64748b;--white:#ffffff;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:2rem;height:60px;position:sticky;top:0;z-index:100;}
+  .nav-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--white);text-decoration:none;letter-spacing:-0.5px;}
+  .nav-brand span{color:var(--accent);}
+  .nav-links{display:flex;gap:0.25rem;}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:0.85rem;font-weight:500;padding:0.4rem 0.75rem;border-radius:6px;transition:all 0.2s;}
+  .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2);}
+  .nav-links a.active{color:var(--accent);}
+  .container{max-width:1200px;margin:0 auto;padding:2rem;}
+  .hero{text-align:center;padding:3rem 0 2rem;}
+  .hero-title{font-family:'Syne',sans-serif;font-weight:800;font-size:2.5rem;color:var(--white);letter-spacing:-1px;}
+  .hero-title span{color:var(--accent);}
+  .hero-sub{color:var(--muted);font-size:1rem;margin-top:0.5rem;}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin:2rem 0;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;transition:border-color 0.2s;}
+  .stat:hover{border-color:var(--accent);}
+  .stat-label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.4rem;}
+  .stat-value{font-family:'Syne',sans-serif;font-weight:700;font-size:1.75rem;color:var(--white);}
+  .stat-value.accent{color:var(--accent);}
+  .stat-value.success{color:var(--success);}
+  .stat-value.warning{color:var(--warning);}
+  .stat-value.danger{color:var(--danger);}
+  .stat-delta{font-size:0.75rem;color:var(--muted);margin-top:0.25rem;}
+
+  .modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;margin-top:2rem;}
+  .module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;text-decoration:none;color:var(--text);transition:all 0.2s;display:flex;flex-direction:column;gap:1rem;}
+  .module-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateY(-2px);}
+  .module-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+  .module-icon.blue{background:#1e3a5f;}
+  .module-icon.indigo{background:#1e1b4b;}
+  .module-icon.green{background:#14532d;}
+  .module-icon.yellow{background:#422006;}
+  .module-icon.purple{background:#2e1065;}
+  .module-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:var(--white);}
+  .module-desc{font-size:0.8rem;color:var(--muted);line-height:1.5;}
+  .module-tag{font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:999px;align-self:flex-start;}
+  .tag-blue{background:#1e3a5f;color:#60a5fa;}
+  .tag-green{background:#14532d;color:#4ade80;}
+
+  /* Alerts */
+  .alerts-section{margin-top:2.5rem;}
+  .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--white);margin-bottom:1rem;}
+  .alert-list{display:flex;flex-direction:column;gap:0.5rem;}
+  .alert-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.85rem 1.1rem;display:flex;align-items:center;gap:1rem;font-size:0.875rem;}
+  .alert-item.warn{border-left:3px solid var(--warning);}
+  .alert-item.danger{border-left:3px solid var(--danger);}
+  .alert-item.info{border-left:3px solid var(--accent);}
+  .alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dot-warn{background:var(--warning);}
+  .dot-danger{background:var(--danger);}
+  .dot-info{background:var(--accent);}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">GSJ<span>.</span>Admin</a>
+  <div class="nav-links">
+    <a href="clientes.html">Clientes</a>
+    <a href="planos.html">Planos</a>
+    <a href="beneficiarios.html">Beneficiários</a>
+    <a href="cobrancas.html">Cobranças</a>
+    <a href="cnab.html">CNAB 400</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-title">GSJ <span>Admin</span></div>
+    <div class="hero-sub">Sistema de Gestão de Planos e Cobranças</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Clientes Ativos</div><div class="stat-value accent" id="s-clientes">—</div></div>
+    <div class="stat"><div class="stat-label">Beneficiários</div><div class="stat-value" id="s-bens">—</div></div>
+    <div class="stat"><div class="stat-label">Cobranças em Aberto</div><div class="stat-value warning" id="s-aberto">—</div></div>
+    <div class="stat"><div class="stat-label">Cobranças Vencidas</div><div class="stat-value danger" id="s-vencido">—</div></div>
+    <div class="stat"><div class="stat-label">Recebido este Mês</div><div class="stat-value success" id="s-recebido">—</div></div>
+  </div>
+
+  <div class="modules">
+    <a href="clientes.html" class="module-card">
+      <div class="module-icon blue">
+        <svg width="22" height="22" fill="none" stroke="#60a5fa" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div>
+        <div class="module-name">Clientes</div>
+        <div class="module-desc">Cadastro de empresas e tomadores com dados bancários e vinculação de planos.</div>
+      </div>
+      <span class="module-tag tag-blue">Cadastro</span>
+    </a>
+
+    <a href="planos.html" class="module-card">
+      <div class="module-icon indigo">
+        <svg width="22" height="22" fill="none" stroke="#a5b4fc" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      </div>
+      <div>
+        <div class="module-name">Planos</div>
+        <div class="module-desc">Gestão global de planos com tabelas de preço por faixas etárias.</div>
+      </div>
+      <span class="module-tag tag-blue">Configuração</span>
+    </a>
+
+    <a href="beneficiarios.html" class="module-card">
+      <div class="module-icon green">
+        <svg width="22" height="22" fill="none" stroke="#4ade80" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg>
+      </div>
+      <div>
+        <div class="module-name">Beneficiários</div>
+        <div class="module-desc">Titulares e dependentes vinculados a clientes e planos com carteirinha.</div>
+      </div>
+      <span class="module-tag tag-green">Operacional</span>
+    </a>
+
+    <a href="cobrancas.html" class="module-card">
+      <div class="module-icon yellow">
+        <svg width="22" height="22" fill="none" stroke="#fbbf24" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      </div>
+      <div>
+        <div class="module-name">Cobranças</div>
+        <div class="module-desc">Mensalidades, baixa de pagamentos, exportação CSV e geração em lote.</div>
+      </div>
+      <span class="module-tag tag-green">Financeiro</span>
+    </a>
+
+    <a href="cnab.html" class="module-card">
+      <div class="module-icon purple">
+        <svg width="22" height="22" fill="none" stroke="#c084fc" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="module-name">CNAB 400</div>
+        <div class="module-desc">Geração de arquivos de remessa bancária no padrão CNAB 400 com histórico.</div>
+      </div>
+      <span class="module-tag tag-blue">Bancário</span>
+    </a>
+  </div>
+
+  <div class="alerts-section">
+    <div class="section-title">Alertas do Sistema</div>
+    <div class="alert-list" id="alerts">
+      <div class="alert-item info"><div class="alert-dot dot-info"></div>Carregando alertas...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://orpydwrbzedavfoegyhx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ycHlkd3JiemVkYXZmb2VneWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAxNTU2MDAwMH0.placeholder';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function init() {
+  try {
+    const hoje = new Date().toISOString().split('T')[0];
+    const mesAtual = hoje.slice(0,7);
+
+    const [clRes, benRes, cobRes] = await Promise.all([
+      sb.from('clientes').select('id', {count:'exact',head:true}),
+      sb.from('beneficiarios').select('id', {count:'exact',head:true}),
+      sb.from('cobrancas').select('id,valor,status,vencimento,data_pagamento,referencia'),
+    ]);
+
+    document.getElementById('s-clientes').textContent = clRes.count ?? '—';
+    document.getElementById('s-bens').textContent = benRes.count ?? '—';
+
+    const cobras = cobRes.data || [];
+    const abertos = cobras.filter(c=>c.status==='aberto' && c.vencimento>=hoje);
+    const vencidos = cobras.filter(c=>c.status==='aberto' && c.vencimento<hoje);
+    const pagosEsteMes = cobras.filter(c=>c.status==='pago' && (c.data_pagamento||'').startsWith(mesAtual));
+    const recebido = pagosEsteMes.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+
+    document.getElementById('s-aberto').textContent = abertos.length;
+    document.getElementById('s-vencido').textContent = vencidos.length;
+    document.getElementById('s-recebido').textContent = 'R$ '+recebido.toLocaleString('pt-BR',{minimumFractionDigits:2});
+
+    // Alerts
+    const alerts = [];
+    if (vencidos.length > 0) {
+      alerts.push({type:'danger', msg:`${vencidos.length} cobrança(s) vencida(s) aguardando pagamento.`});
+    }
+    if (abertos.length > 0) {
+      const totalAberto = abertos.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+      alerts.push({type:'warn', msg:`${abertos.length} cobrança(s) em aberto — R$ ${totalAberto.toLocaleString('pt-BR',{minimumFractionDigits:2})} a receber.`});
+    }
+    if (!alerts.length) {
+      alerts.push({type:'info', msg:'Nenhum alerta pendente. Tudo em dia!'});
+    }
+    document.getElementById('alerts').innerHTML = alerts.map(a=>
+      `<div class="alert-item ${a.type}"><div class="alert-dot dot-${a.type}"></div>${a.msg}</div>`
+    ).join('');
+  } catch(e) {
+    console.error(e);
+    document.getElementById('alerts').innerHTML = `<div class="alert-item warn"><div class="alert-dot dot-warn"></div>Erro ao conectar ao banco de dados. Verifique a chave da API.</div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
