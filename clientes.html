@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GSJ Admin — Clientes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#ebebea;
+  --text:#1a1a18;--text2:#6b6b67;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --info-bg:#e6f1fb;--info-text:#185fa5;
+  --danger-bg:#fcebeb;--danger-text:#a32d2d;
+  --success-bg:#eaf3de;--success-text:#3b6d11;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2c;
+  --text:#f0efeb;--text2:#9a9a94;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --info-bg:#0c2a45;--info-text:#85b7eb;
+  --danger-bg:#3a1414;--danger-text:#f09595;
+  --success-bg:#162408;--success-text:#97c459;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);min-height:100vh}
+
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-box{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:340px}
+.login-box h2{font-size:18px;font-weight:500;margin-bottom:.4rem}
+.login-box p{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+.err-msg{font-size:12px;color:var(--danger-text);margin-bottom:10px;display:none}
+.err-msg.show{display:block}
+.btn-full{width:100%;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:10px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.btn-full:hover{opacity:.82}
+
+/* Layout */
+#app{display:none}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:12px}
+.topbar-title{font-size:16px;font-weight:500}
+.topbar-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.btn-new{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.btn-new:hover{opacity:.82}
+.btn-out{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s}
+.btn-out:hover{background:var(--bg2)}
+
+.container{max-width:1100px;margin:0 auto;padding:1.5rem 1rem}
+.toolbar{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.toolbar input{flex:1;min-width:200px;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:9px 14px;font-size:14px;color:var(--text);outline:none}
+.toolbar input:focus{border-color:var(--info-text)}
+.badge{font-size:12px;padding:4px 12px;border-radius:var(--radius);background:var(--info-bg);color:var(--info-text);font-weight:500;white-space:nowrap}
+.filter-btns{display:flex;gap:6px}
+.fbtn{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 14px;font-size:13px;cursor:pointer;color:var(--text2);transition:all .15s}
+.fbtn:hover{background:var(--bg2)}
+.fbtn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* Tabela */
+.card-table{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+thead th{text-align:left;font-size:11px;font-weight:500;color:var(--text2);padding:10px 14px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+thead th:nth-child(1){width:22%}
+thead th:nth-child(2){width:16%}
+thead th:nth-child(3){width:14%}
+thead th:nth-child(4){width:16%}
+thead th:nth-child(5){width:14%}
+thead th:nth-child(6){width:10%;text-align:center}
+thead th:nth-child(7){width:8%;text-align:center}
+tbody tr{border-bottom:0.5px solid var(--border);transition:background .12s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg2)}
+tbody td{padding:11px 14px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tbody td.wrap{white-space:normal;word-break:break-word}
+.status-badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500}
+.s-ativo{background:var(--success-bg);color:var(--success-text)}
+.s-inativo{background:var(--bg3);color:var(--text2)}
+.actions{display:flex;gap:5px;justify-content:center}
+.btn-sm{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:5px 9px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s}
+.btn-sm:hover{background:var(--bg2);color:var(--text)}
+.btn-sm.del:hover{border-color:var(--danger-text);color:var(--danger-text);background:var(--danger-bg)}
+.empty{text-align:center;padding:3rem;color:var(--text2);font-size:14px}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.5rem;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:1.2rem}
+.modal-section{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin:1rem 0 .6rem;padding-bottom:4px;border-bottom:0.5px solid var(--border)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px}
+.field input,.field textarea,.field select{width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 12px;font-size:14px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--info-text)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:1.2rem}
+.btn-cancel{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 14px;cursor:pointer;font-size:13px;color:var(--text2)}
+.btn-cancel:hover{background:var(--bg2)}
+.btn-save{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:8px 18px;cursor:pointer;font-size:13px;font-weight:500;transition:opacity .15s}
+.btn-save:hover{opacity:.82}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+
+/* Del modal */
+.overlay-del{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;align-items:center;justify-content:center;padding:1rem}
+.overlay-del.open{display:flex}
+
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px}
+.dot-ok{background:#63b940}
+.dot-load{background:#ef9f27;animation:pulse 1s infinite}
+.dot-err{background:#e24b4a}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* Banco badges */
+.banco-badge{font-size:11px;padding:2px 7px;border-radius:var(--radius);background:var(--info-bg);color:var(--info-text);font-weight:500}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login">
+  <div class="login-box">
+    <h2>GSJ Admin</h2>
+    <p>Cadastro de Clientes</p>
+    <div class="field"><label>Senha</label>
+      <input type="password" id="pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.doLogin()"/>
+    </div>
+    <div class="err-msg" id="err-msg">Senha incorreta.</div>
+    <button class="btn-full" onclick="window.doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">GSJ Admin — Clientes</div>
+      <div class="topbar-sub" id="status-label"><span class="status-dot dot-load"></span>Conectando...</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-new" onclick="window.openModal()">+ Novo cliente</button>
+      <button class="btn-out" onclick="window.doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Buscar por nome, CNPJ, cidade ou banco..." oninput="window.render()"/>
+      <div class="filter-btns">
+        <button class="fbtn active" id="btn-todos" onclick="window.setFilter('todos')">Todos</button>
+        <button class="fbtn" id="btn-ativos" onclick="window.setFilter('ativos')">Ativos</button>
+        <button class="fbtn" id="btn-inativos" onclick="window.setFilter('inativos')">Inativos</button>
+      </div>
+      <span class="badge" id="count">—</span>
+    </div>
+    <div class="card-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>CNPJ</th>
+            <th>Cidade/UF</th>
+            <th>Contato</th>
+            <th>Banco</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7"><div class="empty">Carregando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modal-title">Novo cliente</h3>
+
+    <div class="modal-section">Dados da empresa</div>
+    <div class="field"><label>Nome / Razão Social *</label><input type="text" id="f-nome" placeholder="Ex: Clínica Santa Maria Ltda"/></div>
+    <div class="field-row">
+      <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" placeholder="00.000.000/0000-00"/></div>
+      <div class="field"><label>Contato</label><input type="text" id="f-contato" placeholder="Nome do responsável"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Telefone</label><input type="text" id="f-telefone" placeholder="(19) 99999-9999"/></div>
+      <div class="field"><label>E-mail</label><input type="text" id="f-email" placeholder="contato@empresa.com"/></div>
+    </div>
+    <div class="field"><label>Endereço</label><input type="text" id="f-endereco" placeholder="Rua, número, bairro"/></div>
+    <div class="field-row3">
+      <div class="field"><label>Cidade</label><input type="text" id="f-cidade" placeholder="Campinas"/></div>
+      <div class="field"><label>UF</label><input type="text" id="f-estado" placeholder="SP" maxlength="2"/></div>
+      <div class="field"><label>CEP</label><input type="text" id="f-cep" placeholder="00000-000"/></div>
+    </div>
+
+    <div class="modal-section">Dados bancários</div>
+    <div class="field-row">
+      <div class="field"><label>Código do banco</label><input type="text" id="f-banco-codigo" placeholder="Ex: 033 (Santander)"/></div>
+      <div class="field"><label>Nome do banco</label><input type="text" id="f-banco-nome" placeholder="Ex: Santander"/></div>
+    </div>
+    <div class="field-row3">
+      <div class="field"><label>Agência</label><input type="text" id="f-agencia" placeholder="0000"/></div>
+      <div class="field"><label>Dígito ag.</label><input type="text" id="f-agencia-dv" placeholder="0" maxlength="2"/></div>
+      <div class="field"><label>Carteira</label><input type="text" id="f-carteira" placeholder="Ex: 101"/></div>
+    </div>
+    <div class="field-row3">
+      <div class="field"><label>Conta</label><input type="text" id="f-conta" placeholder="00000"/></div>
+      <div class="field"><label>Dígito conta</label><input type="text" id="f-conta-dv" placeholder="0" maxlength="2"/></div>
+      <div class="field"><label>Convênio</label><input type="text" id="f-convenio" placeholder="000000"/></div>
+    </div>
+    <div class="field"><label>Cedente (nome na cobrança)</label><input type="text" id="f-cedente" placeholder="Nome que aparece no boleto"/></div>
+
+    <div class="modal-section">Planos oferecidos</div>
+    <div id="planos-check-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="color:var(--text2);font-size:13px">Carregando planos...</div>
+    </div>
+    <div class="modal-section">Outras informações</div>
+    <div class="field">
+      <label>Status</label>
+      <select id="f-ativo">
+        <option value="true">Ativo</option>
+        <option value="false">Inativo</option>
+      </select>
+    </div>
+    <div class="field"><label>Observações</label><textarea id="f-obs" placeholder="Informações adicionais..."></textarea></div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="window.closeModal()">Cancelar</button>
+      <button class="btn-save" id="btn-save" onclick="window.save()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUSÃO -->
+<div class="overlay-del" id="overlay-del">
+  <div class="modal" style="max-width:340px">
+    <h3>Confirmar exclusão</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Digite a senha de exclusão.</p>
+    <div class="field"><label>Senha</label>
+      <input type="password" id="del-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.confirmDel()"/>
+    </div>
+    <div id="del-err" style="display:none;color:var(--danger-text);font-size:12px;margin-bottom:8px">Senha incorreta.</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="window.cancelDel()">Cancelar</button>
+      <button class="btn-save" onclick="window.confirmDel()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+['doLogin','doLogout','openModal','closeModal','save','render','setFilter',
+ '_edit','_del','cancelDel','confirmDel'].forEach(function(fn){
+  window[fn] = function(){ console.warn(fn+' not yet loaded'); };
+});
+</script>
+
+<script type="module">
+const SENHA = "admin2701";
+const SENHA_DEL = "deleta2701";
+const SB_URL = "https://orpydwrbzedavfoegyhx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ycHlkd3JiemVkYXZmb2VneWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTM3MDYsImV4cCI6MjA5MDQ2OTcwNn0.ixsZbERYrxu-XE2hvBtLCRc3GugyMfKHcbL7qebIPRM";
+
+function sbFetch(path, opts = {}) {
+  return fetch(SB_URL + '/rest/v1/' + path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    }
+  });
+}
+
+let DATA = [], editId = null, currentFilter = 'todos';
+let _delId = null;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function setStatus(s) {
+  const el = document.getElementById('status-label');
+  if (s === 'ok') el.innerHTML = '<span class="status-dot dot-ok"></span>Conectado ao Supabase';
+  else if (s === 'err') el.innerHTML = '<span class="status-dot dot-err"></span>Erro de conexão';
+  else el.innerHTML = '<span class="status-dot dot-load"></span>Conectando...';
+}
+
+let PLANOS_GLOBAL = [];
+let CLIENTE_PLANOS = {};
+
+async function loadPlanos() {
+  try {
+    var r = await sbFetch('planos?order=nome.asc&select=id,nome,tipo&ativo=eq.true');
+    if (r.ok) PLANOS_GLOBAL = await r.json();
+  } catch(e) {}
+}
+
+async function loadClientePlanos(clienteId) {
+  try {
+    var r = await sbFetch('cliente_planos?cliente_id=eq.' + clienteId + '&select=plano_id');
+    if (r.ok) {
+      var data = await r.json();
+      CLIENTE_PLANOS[clienteId] = data.map(function(x){ return x.plano_id; });
+    }
+  } catch(e) {}
+}
+
+function renderPlanosCheck(selectedIds) {
+  var container = document.getElementById('planos-check-list');
+  if (!container) return;
+  if (PLANOS_GLOBAL.length === 0) {
+    container.innerHTML = '<div style="color:var(--text2);font-size:13px">Nenhum plano cadastrado</div>';
+    return;
+  }
+  container.innerHTML = '';
+  PLANOS_GLOBAL.forEach(function(p) {
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border-radius:var(--radius);cursor:pointer';
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.id = 'plano-' + p.id;
+    chk.value = p.id;
+    chk.checked = selectedIds ? selectedIds.includes(p.id) : false;
+    chk.style.cssText = 'width:16px;height:16px;accent-color:var(--info-text);cursor:pointer';
+    var lbl = document.createElement('label');
+    lbl.htmlFor = 'plano-' + p.id;
+    lbl.style.cssText = 'font-size:13px;cursor:pointer;flex:1';
+    lbl.textContent = p.nome;
+    div.appendChild(chk);
+    div.appendChild(lbl);
+    container.appendChild(div);
+  });
+}
+
+function getSelectedPlanos() {
+  var checked = document.querySelectorAll('#planos-check-list input[type=checkbox]:checked');
+  return Array.from(checked).map(function(c){ return c.value; });
+}
+
+async function loadData() {
+  setStatus('load');
+  try {
+    const r = await sbFetch('clientes?order=nome.asc&select=*');
+    if (!r.ok) throw new Error(await r.text());
+    DATA = await r.json();
+    setStatus('ok');
+    window.render();
+  } catch(e) {
+    setStatus('err');
+    console.error(e);
+  }
+}
+
+window.setFilter = function(f) {
+  currentFilter = f;
+  ['todos','ativos','inativos'].forEach(x => {
+    document.getElementById('btn-'+x).classList.toggle('active', x === f);
+  });
+  window.render();
+};
+
+window.render = function() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  let filtered = DATA.filter(d => {
+    const mq = !q || [d.nome,d.cnpj,d.cidade,d.banco_nome,d.contato].map(v=>String(v||'')).join(' ').toLowerCase().includes(q);
+    const mf = currentFilter === 'todos' || (currentFilter === 'ativos' && d.ativo) || (currentFilter === 'inativos' && !d.ativo);
+    return mq && mf;
+  });
+
+  document.getElementById('count').textContent = filtered.length + ' cliente' + (filtered.length !== 1 ? 's' : '');
+  const tb = document.getElementById('tbody');
+  if (filtered.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty">Nenhum cliente encontrado</div></td></tr>';
+    return;
+  }
+
+  tb.innerHTML = '';
+  filtered.forEach(function(d) {
+    var tr = document.createElement('tr');
+    var status = d.ativo
+      ? '<span class="status-badge s-ativo">Ativo</span>'
+      : '<span class="status-badge s-inativo">Inativo</span>';
+    var banco = d.banco_nome ? '<span class="banco-badge">' + escH(d.banco_nome) + '</span>' : '—';
+    var loc = [d.cidade, d.estado].filter(Boolean).join('/') || '—';
+    tr.innerHTML =
+      '<td><strong>' + escH(d.nome) + '</strong></td>' +
+      '<td>' + escH(d.cnpj || '—') + '</td>' +
+      '<td>' + escH(loc) + '</td>' +
+      '<td>' + escH(d.contato || '—') + '<br><span style="font-size:12px;color:var(--text2)">' + escH(d.telefone || '') + '</span></td>' +
+      '<td>' + banco + '</td>' +
+      '<td style="text-align:center">' + status + '</td>' +
+      '<td style="text-align:center"><div class="actions"></div></td>';
+    var actions = tr.querySelector('.actions');
+    var editBtn = document.createElement('button');
+    editBtn.className = 'btn-sm';
+    editBtn.title = 'Editar';
+    editBtn.textContent = '✏️';
+    editBtn.onclick = (function(id){ return function(){ window._edit(id); }; })(d.id);
+    var delBtn = document.createElement('button');
+    delBtn.className = 'btn-sm del';
+    delBtn.title = 'Excluir';
+    delBtn.textContent = '🗑';
+    delBtn.onclick = (function(id, nome){ return function(){ window._del(id, nome); }; })(d.id, d.nome);
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    tb.appendChild(tr);
+  });
+};
+
+function escH(s) {
+  if (!s) return "";
+  var r = String(s);
+  r = r.split("&").join("&amp;");
+  r = r.split("<").join("&lt;");
+  r = r.split(">").join("&gt;");
+  r = r.split('"').join("&quot;");
+  return r;
+}
+
+function getFields() {
+  return {
+    nome: document.getElementById('f-nome').value.trim(),
+    cnpj: document.getElementById('f-cnpj').value.trim(),
+    contato: document.getElementById('f-contato').value.trim(),
+    telefone: document.getElementById('f-telefone').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    endereco: document.getElementById('f-endereco').value.trim(),
+    cidade: document.getElementById('f-cidade').value.trim(),
+    estado: document.getElementById('f-estado').value.trim().toUpperCase(),
+    cep: document.getElementById('f-cep').value.trim(),
+    banco_codigo: document.getElementById('f-banco-codigo').value.trim(),
+    banco_nome: document.getElementById('f-banco-nome').value.trim(),
+    agencia: document.getElementById('f-agencia').value.trim(),
+    agencia_dv: document.getElementById('f-agencia-dv').value.trim(),
+    conta: document.getElementById('f-conta').value.trim(),
+    conta_dv: document.getElementById('f-conta-dv').value.trim(),
+    carteira: document.getElementById('f-carteira').value.trim(),
+    convenio: document.getElementById('f-convenio').value.trim(),
+    cedente: document.getElementById('f-cedente').value.trim(),
+    ativo: document.getElementById('f-ativo').value === 'true',
+    obs: document.getElementById('f-obs').value.trim(),
+  };
+}
+
+function setFields(d) {
+  const ids = ['nome','cnpj','contato','telefone','email','endereco','cidade','estado','cep',
+    'banco-codigo','banco-nome','agencia','agencia-dv','conta','conta-dv','carteira','convenio','cedente','obs'];
+  const keys = ['nome','cnpj','contato','telefone','email','endereco','cidade','estado','cep',
+    'banco_codigo','banco_nome','agencia','agencia_dv','conta','conta_dv','carteira','convenio','cedente','obs'];
+  ids.forEach((id,i) => document.getElementById('f-'+id).value = d[keys[i]] || '');
+  document.getElementById('f-ativo').value = d.ativo ? 'true' : 'false';
+}
+
+function clearFields() {
+  ['nome','cnpj','contato','telefone','email','endereco','cidade','estado','cep',
+   'banco-codigo','banco-nome','agencia','agencia-dv','conta','conta-dv','carteira','convenio','cedente','obs']
+  .forEach(id => document.getElementById('f-'+id).value = '');
+  document.getElementById('f-ativo').value = 'true';
+}
+
+window.openModal = function() {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Novo cliente';
+  clearFields();
+  renderPlanosCheck([]);
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-nome').focus(), 100);
+};
+
+window.closeModal = function() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+};
+
+window._edit = async function(id) {
+  const d = DATA.find(x => x.id === id);
+  if (!d) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Editar cliente';
+  setFields(d);
+  await loadClientePlanos(id);
+  renderPlanosCheck(CLIENTE_PLANOS[id] || []);
+  document.getElementById('overlay').classList.add('open');
+};
+
+window.save = async function() {
+  const data = getFields();
+  if (!data.nome) { alert('Preencha o nome do cliente.'); return; }
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    var _savedClienteId = editId;
+    var r;
+    if (editId) {
+      r = await sbFetch('clientes?id=eq.'+editId, { method:'PATCH', body: JSON.stringify(Object.assign({}, data, {updated_at: new Date().toISOString()})) });
+      if (!r.ok) throw new Error(await r.text());
+    } else {
+      r = await sbFetch('clientes', { method:'POST', body: JSON.stringify(data) });
+      if (!r.ok) throw new Error(await r.text());
+      var created = await r.json();
+      _savedClienteId = created[0].id;
+    }
+    var selectedPlanos = getSelectedPlanos();
+    await sbFetch('cliente_planos?cliente_id=eq.' + _savedClienteId, { method:'DELETE', prefer:'return=minimal' });
+    if (selectedPlanos.length > 0) {
+      var inserts = selectedPlanos.map(function(pid){ return { cliente_id: _savedClienteId, plano_id: pid, ativo: true }; });
+      await sbFetch('cliente_planos', { method:'POST', body: JSON.stringify(inserts) });
+    }
+    showToast(editId ? 'Cliente atualizado!' : 'Cliente cadastrado!');
+    window.closeModal();
+    await loadData();
+  } catch(e) { alert('Erro: '+e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+};
+
+window._del = function(id, nome) {
+  _delId = id;
+  document.getElementById('del-pwd').value = '';
+  document.getElementById('del-err').style.display = 'none';
+  document.getElementById('overlay-del').classList.add('open');
+  setTimeout(() => document.getElementById('del-pwd').focus(), 100);
+};
+
+window.cancelDel = function() {
+  document.getElementById('overlay-del').classList.remove('open');
+  _delId = null;
+};
+
+window.confirmDel = async function() {
+  if (document.getElementById('del-pwd').value !== SENHA_DEL) {
+    document.getElementById('del-err').style.display = 'block';
+    document.getElementById('del-pwd').value = '';
+    return;
+  }
+  document.getElementById('overlay-del').classList.remove('open');
+  try {
+    const r = await sbFetch('clientes?id=eq.'+_delId, { method:'DELETE', prefer:'return=minimal' });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Cliente excluído');
+    await loadData();
+  } catch(e) { alert('Erro: '+e.message); }
+  _delId = null;
+};
+
+window.doLogin = function() {
+  if (document.getElementById('pwd').value === SENHA) {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('err-msg').classList.remove('show');
+    loadPlanos().then(function(){ loadData(); });
+  } else {
+    document.getElementById('err-msg').classList.add('show');
+    document.getElementById('pwd').value = '';
+    document.getElementById('pwd').focus();
+  }
+};
+
+window.doLogout = function() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('pwd').value = '';
+  DATA = [];
+};
+
+document.getElementById('overlay').addEventListener('click', e => { if(e.target===document.getElementById('overlay')) window.closeModal(); });
+document.getElementById('overlay-del').addEventListener('click', e => { if(e.target===document.getElementById('overlay-del')) window.cancelDel(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GSJ Admin — Planos</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#ebebea;
+  --text:#1a1a18;--text2:#6b6b67;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --info-bg:#e6f1fb;--info-text:#185fa5;
+  --danger-bg:#fcebeb;--danger-text:#a32d2d;
+  --success-bg:#eaf3de;--success-text:#3b6d11;
+  --warning-bg:#faeeda;--warning-text:#854f0b;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2c;
+  --text:#f0efeb;--text2:#9a9a94;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --info-bg:#0c2a45;--info-text:#85b7eb;
+  --danger-bg:#3a1414;--danger-text:#f09595;
+  --success-bg:#162408;--success-text:#97c459;
+  --warning-bg:#2a1f08;--warning-text:#ef9f27;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);min-height:100vh}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-box{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:340px}
+.login-box h2{font-size:18px;font-weight:500;margin-bottom:.4rem}
+.login-box p{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+.err-msg{font-size:12px;color:var(--danger-text);margin-bottom:10px;display:none}
+.err-msg.show{display:block}
+.btn-full{width:100%;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:10px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.btn-full:hover{opacity:.82}
+#app{display:none}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:12px}
+.topbar-title{font-size:16px;font-weight:500}
+.topbar-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.btn-new{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.btn-new:hover{opacity:.82}
+.btn-out{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s}
+.btn-out:hover{background:var(--bg2)}
+.container{max-width:1100px;margin:0 auto;padding:1.5rem 1rem}
+.toolbar{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:9px 14px;font-size:14px;color:var(--text);outline:none}
+.toolbar input{flex:1;min-width:200px}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--info-text)}
+.badge{font-size:12px;padding:4px 12px;border-radius:var(--radius);background:var(--info-bg);color:var(--info-text);font-weight:500;white-space:nowrap}
+.card-table{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+thead th{text-align:left;font-size:11px;font-weight:500;color:var(--text2);padding:10px 14px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+thead th:nth-child(1){width:22%}
+thead th:nth-child(2){width:12%}
+thead th:nth-child(3){width:14%}
+thead th:nth-child(4){width:16%}
+thead th:nth-child(5){width:12%;text-align:center}
+thead th:nth-child(6){width:12%;text-align:center}
+thead th:nth-child(7){width:12%;text-align:center}
+tbody tr{border-bottom:0.5px solid var(--border);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg2)}
+tbody td{padding:11px 14px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status-badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500}
+.s-ativo{background:var(--success-bg);color:var(--success-text)}
+.s-inativo{background:var(--bg3);color:var(--text2)}
+.tipo-badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500}
+.t-individual{background:var(--info-bg);color:var(--info-text)}
+.t-familiar{background:var(--warning-bg);color:var(--warning-text)}
+.t-empresarial{background:var(--success-bg);color:var(--success-text)}
+.t-coletivo{background:#eeedfe;color:#534ab7}
+.actions{display:flex;gap:5px;justify-content:center}
+.btn-sm{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:5px 9px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s}
+.btn-sm:hover{background:var(--bg2);color:var(--text)}
+.btn-sm.del:hover{border-color:var(--danger-text);color:var(--danger-text);background:var(--danger-bg)}
+.empty{text-align:center;padding:3rem;color:var(--text2);font-size:14px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.5rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:1.2rem}
+.modal-section{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin:1rem 0 .6rem;padding-bottom:4px;border-bottom:0.5px solid var(--border)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px}
+.field input,.field textarea,.field select{width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 12px;font-size:14px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--info-text)}
+.field textarea{resize:vertical;min-height:60px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:1.2rem}
+.btn-cancel{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 14px;cursor:pointer;font-size:13px;color:var(--text2)}
+.btn-cancel:hover{background:var(--bg2)}
+.btn-save{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:8px 18px;cursor:pointer;font-size:13px;font-weight:500;transition:opacity .15s}
+.btn-save:hover{opacity:.82}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.faixas-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:.5rem}
+.faixas-table th{text-align:left;font-size:11px;font-weight:500;color:var(--text2);padding:6px 8px;border-bottom:0.5px solid var(--border);text-transform:uppercase}
+.faixas-table td{padding:6px 4px;border-bottom:0.5px solid var(--border)}
+.faixas-table tr:last-child td{border-bottom:none}
+.faixas-table input{width:100%;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:5px 8px;font-size:13px;color:var(--text);outline:none}
+.faixas-table input:focus{border-color:var(--info-text)}
+.btn-add-faixa{background:var(--info-bg);color:var(--info-text);border:none;border-radius:var(--radius);padding:7px 14px;cursor:pointer;font-size:12px;font-weight:500;margin-top:8px}
+.btn-add-faixa:hover{opacity:.85}
+.btn-del-faixa{background:none;border:none;cursor:pointer;color:var(--danger-text);font-size:14px;padding:2px 6px}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px}
+.dot-ok{background:#63b940}
+.dot-load{background:#ef9f27;animation:pulse 1s infinite}
+.dot-err{background:#e24b4a}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login">
+  <div class="login-box">
+    <h2>GSJ Admin</h2>
+    <p>Cadastro de Planos</p>
+    <div class="field"><label>Senha</label>
+      <input type="password" id="pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.doLogin()"/>
+    </div>
+    <div class="err-msg" id="err-msg">Senha incorreta.</div>
+    <button class="btn-full" onclick="window.doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">GSJ Admin — Planos</div>
+      <div class="topbar-sub" id="status-label"><span class="status-dot dot-load"></span>Conectando...</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-new" onclick="window.openModal()">+ Novo plano</button>
+      <button class="btn-out" onclick="window.doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Buscar por nome, código ou tipo..." oninput="window.render()"/>
+      <select id="filter-tipo" onchange="window.render()">
+        <option value="">Todos os tipos</option>
+        <option value="individual">Individual</option>
+        <option value="familiar">Familiar</option>
+        <option value="empresarial">Empresarial</option>
+        <option value="coletivo">Coletivo por adesão</option>
+      </select>
+      <span class="badge" id="count">—</span>
+    </div>
+    <div class="card-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Plano</th>
+            <th>Código</th>
+            <th>Tipo</th>
+            <th>Cobertura</th>
+            <th>Faixas</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7"><div class="empty">Carregando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modal-title">Novo plano</h3>
+    <div class="modal-section">Dados do plano</div>
+    <div class="field"><label>Nome do plano *</label><input type="text" id="f-nome" placeholder="Ex: Plano Ouro"/></div>
+    <div class="field-row">
+      <div class="field"><label>Código</label><input type="text" id="f-codigo" placeholder="Ex: PLO001"/></div>
+      <div class="field"><label>Tipo</label>
+        <select id="f-tipo">
+          <option value="individual">Individual</option>
+          <option value="familiar">Familiar</option>
+          <option value="empresarial">Empresarial</option>
+          <option value="coletivo">Coletivo por adesão</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Cobertura</label><input type="text" id="f-cobertura" placeholder="Ex: Nacional, Estadual, Municipal"/></div>
+    <div class="field"><label>Status</label>
+      <select id="f-ativo">
+        <option value="true">Ativo</option>
+        <option value="false">Inativo</option>
+      </select>
+    </div>
+    <div class="field"><label>Observações</label><textarea id="f-obs" placeholder="Informações adicionais..."></textarea></div>
+    <div class="modal-section">Faixas etárias e valores</div>
+    <table class="faixas-table">
+      <thead>
+        <tr><th>Idade de</th><th>Idade até</th><th>Valor (R$)</th><th>Vigência início</th><th>Vigência fim</th><th></th></tr>
+      </thead>
+      <tbody id="faixas-tbody"></tbody>
+    </table>
+    <button class="btn-add-faixa" onclick="window.addFaixaRow()">+ Adicionar faixa</button>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="window.closeModal()">Cancelar</button>
+      <button class="btn-save" id="btn-save" onclick="window.save()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-del">
+  <div class="modal" style="max-width:340px">
+    <h3>Confirmar exclusão</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Digite a senha de exclusão.</p>
+    <div class="field"><label>Senha</label>
+      <input type="password" id="del-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.confirmDel()"/>
+    </div>
+    <div id="del-err" style="display:none;color:var(--danger-text);font-size:12px;margin-bottom:8px">Senha incorreta.</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="window.cancelDel()">Cancelar</button>
+      <button class="btn-save" onclick="window.confirmDel()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+['doLogin','doLogout','openModal','closeModal','save','render','_edit','_del','cancelDel','confirmDel','addFaixaRow'].forEach(function(fn){
+  window[fn] = function(){ console.warn(fn+' not yet loaded'); };
+});
+</script>
+
+<script type="module">
+const SENHA = "admin2701";
+const SENHA_DEL = "deleta2701";
+const SB_URL = "https://orpydwrbzedavfoegyhx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ycHlkd3JiemVkYXZmb2VneWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTM3MDYsImV4cCI6MjA5MDQ2OTcwNn0.ixsZbERYrxu-XE2hvBtLCRc3GugyMfKHcbL7qebIPRM";
+
+function sb(path, opts) {
+  opts = opts || {};
+  return fetch(SB_URL + '/rest/v1/' + path, {
+    method: opts.method || 'GET',
+    body: opts.body,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Prefer': opts.prefer || 'return=representation'
+    }
+  });
+}
+
+let PLANOS = [], FAIXAS = [], editId = null, _delId = null;
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+function setStatus(s) {
+  var el = document.getElementById('status-label');
+  if (s === 'ok') el.innerHTML = '<span class="status-dot dot-ok"></span>Conectado';
+  else if (s === 'err') el.innerHTML = '<span class="status-dot dot-err"></span>Erro';
+  else el.innerHTML = '<span class="status-dot dot-load"></span>Conectando...';
+}
+
+function tipoBadge(tipo) {
+  var cls = {individual:'t-individual',familiar:'t-familiar',empresarial:'t-empresarial',coletivo:'t-coletivo'}[tipo] || 't-individual';
+  var lbl = {individual:'Individual',familiar:'Familiar',empresarial:'Empresarial',coletivo:'Coletivo'}[tipo] || tipo;
+  return '<span class="tipo-badge ' + cls + '">' + lbl + '</span>';
+}
+
+async function loadAll() {
+  setStatus('load');
+  try {
+    var rp = await sb('planos?order=nome.asc&select=*');
+    var rf = await sb('faixas_valores?select=*');
+    PLANOS = await rp.json();
+    FAIXAS = await rf.json();
+    setStatus('ok');
+    window.render();
+  } catch(e) { setStatus('err'); }
+}
+
+window.render = function() {
+  var q = document.getElementById('search').value.toLowerCase().trim();
+  var ft = document.getElementById('filter-tipo').value;
+  var filtered = PLANOS.filter(function(d) {
+    var mq = !q || [d.nome, d.codigo, d.tipo].map(function(v){ return String(v||''); }).join(' ').toLowerCase().includes(q);
+    var mt = !ft || d.tipo === ft;
+    return mq && mt;
+  });
+  document.getElementById('count').textContent = filtered.length + ' plano' + (filtered.length !== 1 ? 's' : '');
+  var tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  if (filtered.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty">Nenhum plano encontrado</div></td></tr>';
+    return;
+  }
+  filtered.forEach(function(d) {
+    var qtd = FAIXAS.filter(function(f){ return f.plano_id === d.id; }).length;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><strong>' + (d.nome||'') + '</strong></td>' +
+      '<td>' + (d.codigo||'—') + '</td>' +
+      '<td>' + tipoBadge(d.tipo) + '</td>' +
+      '<td>' + (d.cobertura||'—') + '</td>' +
+      '<td style="text-align:center"><span class="badge">' + qtd + ' faixa' + (qtd!==1?'s':'') + '</span></td>' +
+      '<td style="text-align:center"><span class="status-badge ' + (d.ativo?'s-ativo':'s-inativo') + '">' + (d.ativo?'Ativo':'Inativo') + '</span></td>' +
+      '<td style="text-align:center"><div class="actions"></div></td>';
+    var actions = tr.querySelector('.actions');
+    var eb = document.createElement('button');
+    eb.className = 'btn-sm'; eb.title = 'Editar'; eb.textContent = '✏️';
+    eb.onclick = (function(id){ return function(){ window._edit(id); }; })(d.id);
+    var db = document.createElement('button');
+    db.className = 'btn-sm del'; db.title = 'Excluir'; db.textContent = '🗑';
+    db.onclick = (function(id){ return function(){ window._del(id); }; })(d.id);
+    actions.appendChild(eb); actions.appendChild(db);
+    tb.appendChild(tr);
+  });
+};
+
+window.addFaixaRow = function(faixa) {
+  var tb = document.getElementById('faixas-tbody');
+  var tr = document.createElement('tr');
+  tr.dataset.id = faixa ? (faixa.id||'') : '';
+
+  function makeInput(type, cls, placeholder, val, extra) {
+    var td = document.createElement('td');
+    var inp = document.createElement('input');
+    inp.type = type; inp.className = cls; inp.placeholder = placeholder;
+    if (val !== undefined && val !== null) inp.value = val;
+    if (extra) Object.assign(inp, extra);
+    td.appendChild(inp); return td;
+  }
+
+  tr.appendChild(makeInput('number', 'fi', '0', faixa ? faixa.faixa_inicio : '', {min:'0'}));
+  tr.appendChild(makeInput('number', 'ff', '999', faixa ? faixa.faixa_fim : '', {min:'0'}));
+  tr.appendChild(makeInput('number', 'fv', '0.00', faixa ? faixa.valor : '', {min:'0', step:'0.01'}));
+  tr.appendChild(makeInput('date', 'fvi', '', faixa ? faixa.vigencia_inicio : ''));
+  tr.appendChild(makeInput('date', 'fvf', '', faixa && faixa.vigencia_fim ? faixa.vigencia_fim : ''));
+
+  var td6 = document.createElement('td');
+  var btn = document.createElement('button');
+  btn.className = 'btn-del-faixa'; btn.textContent = '🗑';
+  btn.onclick = function(){ tr.remove(); };
+  td6.appendChild(btn); tr.appendChild(td6);
+  tb.appendChild(tr);
+};
+
+function getFaixas() {
+  var rows = document.querySelectorAll('#faixas-tbody tr');
+  var faixas = [];
+  rows.forEach(function(row) {
+    var fi = row.querySelector('.fi'); var ff = row.querySelector('.ff');
+    var fv = row.querySelector('.fv'); var fvi = row.querySelector('.fvi');
+    var fvf = row.querySelector('.fvf');
+    if (fi && fi.value !== '' && ff.value !== '' && fv.value !== '' && fvi.value !== '') {
+      faixas.push({
+        faixa_inicio: parseInt(fi.value),
+        faixa_fim: parseInt(ff.value),
+        valor: parseFloat(fv.value),
+        vigencia_inicio: fvi.value,
+        vigencia_fim: fvf.value || null
+      });
+    }
+  });
+  return faixas;
+}
+
+window.openModal = function() {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Novo plano';
+  ['f-nome','f-codigo','f-cobertura','f-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('f-tipo').value = 'individual';
+  document.getElementById('f-ativo').value = 'true';
+  document.getElementById('faixas-tbody').innerHTML = '';
+  window.addFaixaRow();
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){ document.getElementById('f-nome').focus(); }, 100);
+};
+
+window.closeModal = function() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+};
+
+window._edit = function(id) {
+  var d = PLANOS.find(function(x){ return x.id === id; });
+  if (!d) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Editar plano';
+  document.getElementById('f-nome').value = d.nome||'';
+  document.getElementById('f-codigo').value = d.codigo||'';
+  document.getElementById('f-tipo').value = d.tipo||'individual';
+  document.getElementById('f-cobertura').value = d.cobertura||'';
+  document.getElementById('f-ativo').value = d.ativo ? 'true' : 'false';
+  document.getElementById('f-obs').value = d.obs||'';
+  document.getElementById('faixas-tbody').innerHTML = '';
+  var fp = FAIXAS.filter(function(f){ return f.plano_id === id; });
+  fp.sort(function(a,b){ return a.faixa_inicio - b.faixa_inicio; });
+  if (fp.length === 0) window.addFaixaRow();
+  else fp.forEach(function(f){ window.addFaixaRow(f); });
+  document.getElementById('overlay').classList.add('open');
+};
+
+window.save = async function() {
+  var nome = document.getElementById('f-nome').value.trim();
+  if (!nome) { alert('Preencha o nome do plano.'); return; }
+  var btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  var data = {
+    nome: nome,
+    codigo: document.getElementById('f-codigo').value.trim(),
+    tipo: document.getElementById('f-tipo').value,
+    cobertura: document.getElementById('f-cobertura').value.trim(),
+    ativo: document.getElementById('f-ativo').value === 'true',
+    obs: document.getElementById('f-obs').value.trim()
+  };
+  var faixas = getFaixas();
+  try {
+    var planoId;
+    if (editId) {
+      await sb('planos?id=eq.' + editId, { method: 'PATCH', body: JSON.stringify(data) });
+      planoId = editId;
+    } else {
+      var r = await sb('planos', { method: 'POST', body: JSON.stringify(data) });
+      var created = await r.json();
+      planoId = created[0].id;
+    }
+    await sb('faixas_valores?plano_id=eq.' + planoId, { method: 'DELETE', prefer: 'return=minimal' });
+    if (faixas.length > 0) {
+      var ins = faixas.map(function(f){ return Object.assign({plano_id: planoId}, f); });
+      await sb('faixas_valores', { method: 'POST', body: JSON.stringify(ins) });
+    }
+    showToast(editId ? 'Plano atualizado!' : 'Plano cadastrado!');
+    window.closeModal();
+    await loadAll();
+  } catch(e) { alert('Erro: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+};
+
+window._del = function(id) {
+  _delId = id;
+  document.getElementById('del-pwd').value = '';
+  document.getElementById('del-err').style.display = 'none';
+  document.getElementById('overlay-del').classList.add('open');
+  setTimeout(function(){ document.getElementById('del-pwd').focus(); }, 100);
+};
+
+window.cancelDel = function() {
+  document.getElementById('overlay-del').classList.remove('open');
+  _delId = null;
+};
+
+window.confirmDel = async function() {
+  if (document.getElementById('del-pwd').value !== SENHA_DEL) {
+    document.getElementById('del-err').style.display = 'block';
+    document.getElementById('del-pwd').value = ''; return;
+  }
+  document.getElementById('overlay-del').classList.remove('open');
+  try {
+    await sb('faixas_valores?plano_id=eq.' + _delId, { method: 'DELETE', prefer: 'return=minimal' });
+    await sb('cliente_planos?plano_id=eq.' + _delId, { method: 'DELETE', prefer: 'return=minimal' });
+    await sb('planos?id=eq.' + _delId, { method: 'DELETE', prefer: 'return=minimal' });
+    showToast('Plano excluído');
+    await loadAll();
+  } catch(e) { alert('Erro: ' + e.message); }
+  _delId = null;
+};
+
+window.doLogin = function() {
+  if (document.getElementById('pwd').value === SENHA) {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('err-msg').classList.remove('show');
+    loadAll();
+  } else {
+    document.getElementById('err-msg').classList.add('show');
+    document.getElementById('pwd').value = '';
+    document.getElementById('pwd').focus();
+  }
+};
+
+window.doLogout = function() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('pwd').value = '';
+};
+
+document.getElementById('overlay').addEventListener('click', function(e){ if(e.target===document.getElementById('overlay')) window.closeModal(); });
+document.getElementById('overlay-del').addEventListener('click', function(e){ if(e.target===document.getElementById('overlay-del')) window.cancelDel(); });
+</script>
+</body>
+</html>
